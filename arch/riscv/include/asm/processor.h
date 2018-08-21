@@ -92,6 +92,8 @@ extern int riscv_of_processor_hart(struct device_node *node);
 
 extern void riscv_fill_hwcap(void);
 
+#define ARCH_LOW_ADDRESS_LIMIT  (0xfffffffffUL)
+
 #endif /* __ASSEMBLY__ */
 
 #endif /* _ASM_RISCV_PROCESSOR_H */
