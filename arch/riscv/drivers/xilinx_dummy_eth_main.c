@@ -1123,13 +1123,13 @@ static int axienet_open(struct net_device *ndev)
 		for_each_dma_queue(lp, i) {
 			struct axienet_dma_q *q = lp->dq[i];
 			/* Enable interrupts for Axi DMA Tx */
-      printk("tx_irq = %d", q->tx_irq);
+      printk("tx_irq = %d\n", q->tx_irq);
 			ret = request_irq(q->tx_irq, axienet_tx_irq,
 					  0, ndev->name, ndev);
 			if (ret)
 				goto err_tx_irq;
 			/* Enable interrupts for Axi DMA Rx */
-      printk("rx_irq = %d", q->rx_irq);
+      printk("rx_irq = %d\n", q->rx_irq);
 			ret = request_irq(q->rx_irq, axienet_rx_irq,
 					  0, ndev->name, ndev);
 			if (ret)
@@ -1148,8 +1148,10 @@ err_rx_irq:
 err_tx_irq:
 	for_each_dma_queue(lp, i)
 		napi_disable(&lp->napi[i]);
+  /*
 	if (phydev)
 		phy_disconnect(phydev);
+  */
 	phydev = NULL;
 	for_each_dma_queue(lp, i)
 		tasklet_kill(&lp->dma_err_tasklet[i]);
@@ -1200,8 +1202,10 @@ static int axienet_stop(struct net_device *ndev)
 	if ((lp->axienet_config->mactype == XAXIENET_1G) && !lp->eth_hasnobuf)
 		free_irq(lp->eth_irq, ndev);
 
+  /*
 	if (ndev->phydev)
 		phy_disconnect(ndev->phydev);
+  */
 
 	if (lp->temac_no != XAE_TEMAC2)
 		axienet_dma_bd_release(ndev);
@@ -1566,8 +1570,8 @@ static const struct ethtool_ops axienet_ethtool_ops = {
 	.set_pauseparam = axienet_ethtools_set_pauseparam,
 	.get_coalesce   = axienet_ethtools_get_coalesce,
 	.set_coalesce   = axienet_ethtools_set_coalesce,
-	.get_link_ksettings = phy_ethtool_get_link_ksettings,
-	.set_link_ksettings = phy_ethtool_set_link_ksettings,
+	//.get_link_ksettings = phy_ethtool_get_link_ksettings,
+	//.set_link_ksettings = phy_ethtool_set_link_ksettings,
 };
 
 int dummy_axienet_mdio_wait_until_ready(struct axienet_local *lp);
@@ -2088,9 +2092,9 @@ void axienet_mdio_teardown_local(struct axienet_local *lp)
 {
   printk(KERN_ERR "axienet_mdio_teardown_local \n");
 
-  mdiobus_unregister(lp->mii_bus);
+  //mdiobus_unregister(lp->mii_bus);
   kfree(lp->mii_bus->irq);
-  mdiobus_free(lp->mii_bus);
+  //mdiobus_free(lp->mii_bus);
   lp->mii_bus = NULL;
 }
 
