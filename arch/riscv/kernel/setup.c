@@ -216,11 +216,11 @@ static void __init setup_bootmem(void)
 
 void __init setup_arch(char **cmdline_p)
 {
-#ifdef CONFIG_EARLY_PRINTK
-	if (likely(!early_console)) {
-		early_console = &riscv_sbi_early_console_dev;
-		register_console(early_console);
-	}
+#if defined(CONFIG_EARLY_PRINTK)
+       if (likely(early_console == NULL)) {
+               early_console = &riscv_sbi_early_console_dev;
+               register_console(early_console);
+       }
 #endif
 	*cmdline_p = boot_command_line;
 

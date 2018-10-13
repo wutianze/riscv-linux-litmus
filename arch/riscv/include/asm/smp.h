@@ -25,9 +25,6 @@
 #ifdef CONFIG_SMP
 
 /* SMP initialization hook for setup_arch */
-void __init init_clockevent(void);
-
-/* SMP initialization hook for setup_arch */
 void __init setup_smp(void);
 
 /* Hook for the generic smp_call_function_many() routine. */
@@ -43,18 +40,6 @@ void arch_send_call_function_single_ipi(int cpu);
  * ID.
  */
 #define raw_smp_processor_id() (*((int*)((char*)get_current() + TASK_TI_CPU)))
-
-/* Software interrupt handler */
-void riscv_software_interrupt(void);
-
-#else /* CONFIG_SMP */
-
-/*
- * We currently only use software interrupts to pass inter-processor
- * interrupts, so if a non-SMP system gets a software interrupt then we
- * don't know what to do.
- */
-#define riscv_software_interrupt()	WARN_ON()
 
 #endif /* CONFIG_SMP */
 

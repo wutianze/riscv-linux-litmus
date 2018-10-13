@@ -611,7 +611,8 @@ config ATCPIT100_TIMER
 
 config RISCV_TIMER
 	bool "Timer for the RISC-V platform"
-	depends on RISCV || COMPILE_TEST
+	depends on RISCV
+	default y
 	select TIMER_PROBE
 	select TIMER_OF
 	help
