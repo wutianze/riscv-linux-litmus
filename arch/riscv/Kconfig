@@ -316,3 +316,6 @@ source "security/Kconfig"
 source "crypto/Kconfig"
 
 source "lib/Kconfig"
+
+source "arch/riscv/label/Kconfig"
+

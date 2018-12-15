@@ -2156,7 +2156,10 @@ long _do_fork(unsigned long clone_flags,
 	}
 
 	put_pid(pid);
-	return nr;
+#ifdef CONFIG_CGROUP_DSID
+    p->dsid = p->parent->dsid;
+#endif
+    return nr;
 }
 
 #ifndef CONFIG_HAVE_COPY_THREAD_TLS

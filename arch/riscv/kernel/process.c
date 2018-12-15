@@ -33,6 +33,8 @@
 #include <asm/string.h>
 #include <asm/switch_to.h>
 
+int debug_install = 0;
+
 extern asmlinkage void ret_from_fork(void);
 extern asmlinkage void ret_from_kernel_thread(void);
 
