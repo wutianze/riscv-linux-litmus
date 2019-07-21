@@ -110,19 +110,24 @@ static const struct file_operations dsidfile =
 	.write   = dsid_file_write,  
 };
 
+extern void register_cp_mmio(void);
+extern void unregister_cp_mmio(void);
+
 static int __init label_init(void)
 {
 	struct proc_dir_entry *dsid = proc_create("dsid",0,NULL,&dsidfile);
 	if(!dsid)
 	{
 		return -ENOMEM;
-	}	
+	}
+	register_cp_mmio();
 	printk("Label module installed!\n");
 	return 0;
 }
 
 static void __exit label_exit(void)
 {
+	unregister_cp_mmio();
 	printk("Label module uninstalled!\n");
 	remove_proc_entry("dsid", NULL);
 	return;
