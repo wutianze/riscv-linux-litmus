@@ -22,7 +22,7 @@
 #include <linux/platform_device.h>
 #include <linux/irqchip/chained_irq.h>
 
-#include "../pci.h"
+#include "../../drivers/pci/pci.h"
 
 /* Register definitions */
 #define XILINX_PCIE_REG_VSEC		0x0000012c
