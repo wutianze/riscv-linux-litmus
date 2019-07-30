@@ -295,9 +295,9 @@ static void xilinx_pcie_msi_handler_high(struct irq_desc *desc)
 	struct irq_chip *chip = irq_desc_get_chip(desc);
 	struct xilinx_pcie_port *port = irq_desc_get_handler_data(desc);
 
-	chained_irq_enter(chip, desc);
+	//chained_irq_enter(chip, desc);
 	xilinx_pcie_handle_msi_irq(port, XILINX_PCIE_REG_MSI_HI);
-	chained_irq_exit(chip, desc);
+	//chained_irq_exit(chip, desc);
 }
 
 static void xilinx_pcie_msi_handler_low(struct irq_desc *desc)
@@ -305,9 +305,9 @@ static void xilinx_pcie_msi_handler_low(struct irq_desc *desc)
 	struct irq_chip *chip = irq_desc_get_chip(desc);
 	struct xilinx_pcie_port *port = irq_desc_get_handler_data(desc);
 
-	chained_irq_enter(chip, desc);
+	//chained_irq_enter(chip, desc);
 	xilinx_pcie_handle_msi_irq(port, XILINX_PCIE_REG_MSI_LOW);
-	chained_irq_exit(chip, desc);
+	//chained_irq_exit(chip, desc);
 }
 
 /**
