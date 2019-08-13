@@ -92,7 +92,6 @@ static int dsid_set_show(struct seq_file *sf, void *v)
 static volatile uint32_t *cpbase;
 uint32_t cp_reg_r(uint32_t dm_reg)
 {
-    printk("addr %x\n", cpbase + dm_reg);
     return (uint32_t)*(cpbase + dm_reg);
 }
 
@@ -167,6 +166,18 @@ enum {
 
 	CP_TIMER_HI             = 0x57,
 
+	CP_AUTOCAT_EN           = 0x58,
+
+	CP_AUTOCAT_BIN_POWER    = 0x59,
+
+	CP_AUTOCAT_WAYMASK      = 0x5a,
+
+	CP_AUTOCAT_WATCH_DSID   = 0x5b,
+
+	CP_AUTOCAT_SET          = 0x5c,
+
+	CP_AUTOCAT_GAP          = 0x5d,
+
 	CORE_PC_HI              = 0x70,
 
 	CORE_PC_LO              = 0x71,
@@ -190,6 +201,14 @@ enum {
 	CORE_CSR_PENDING_INT_HI = 0x7a,
 
 	CP_HART_ID              = 0x7b,
+
+	CP_L2_REQ_EN            = 0x7f,
+
+	CP_L2_REQ_MISS          = 0x7c,
+
+	CP_L2_REQ_TOTAL         = 0x7d,
+
+	CP_L2_STAT_RESET        = 0x7e,
 };
 
 const char *cp_reg_name[] = {
@@ -244,6 +263,18 @@ const char *cp_reg_name[] = {
 
 	[CP_TIMER_HI             - CP_HART_DSID] = "timestamp",
 
+	[CP_AUTOCAT_EN           - CP_HART_DSID] = "autocat_en",
+
+	[CP_AUTOCAT_BIN_POWER    - CP_HART_DSID] = "autocat_cycle_log2",
+
+	[CP_AUTOCAT_WAYMASK      - CP_HART_DSID] = "autocat_waymask",
+
+	[CP_AUTOCAT_WATCH_DSID   - CP_HART_DSID] = "autocat_watch",
+
+	[CP_AUTOCAT_SET          - CP_HART_DSID] = "autocat_set",
+
+	[CP_AUTOCAT_GAP          - CP_HART_DSID] = "autocat_gap",
+
 	[CORE_PC_HI              - CP_HART_DSID] = "N/A",
 
 	[CORE_PC_LO              - CP_HART_DSID] = "N/A",
@@ -267,6 +298,14 @@ const char *cp_reg_name[] = {
 	[CORE_CSR_PENDING_INT_HI - CP_HART_DSID] = "N/A",
 
 	[CP_HART_ID              - CP_HART_DSID] = "vhartid",
+
+	[CP_L2_REQ_EN            - CP_HART_DSID] = "l2_query_miss",
+
+	[CP_L2_REQ_MISS          - CP_HART_DSID] = "l2_miss",
+
+	[CP_L2_REQ_TOTAL         - CP_HART_DSID] = "l2_total",
+
+	[CP_L2_STAT_RESET        - CP_HART_DSID] = "l2_stat_reset",
 };
 
 #define NR(arr) (sizeof(arr) / sizeof(arr[0]))
@@ -302,7 +341,7 @@ static ssize_t dsid_cp_write(struct kernfs_open_file *of, char *buf, size_t nbyt
         const char *name = cp_reg_name[i];
         // TODO membase/memmask/hartid uses hartsel for indexing
         if (name && strcmp(name, buf) == 0) {
-            cp_reg_w(CP_DSID_SEL - CP_HART_DSID, dsid_ptr->dsid);
+            cp_reg_w(CP_DSID_SEL - CP_HART_DSID, dsid_ptr->dsid << 2);
             cp_reg_w(i, num);
             return nbytes;
         }
@@ -325,7 +364,7 @@ static int dsid_cp_show(struct seq_file *sf, void *v)
 	struct dsid_cgroup *dsid_ptr = css_dsid(css);
 	int proc_dsid = dsid_ptr->dsid;
 
-    cp_reg_w(CP_DSID_SEL - CP_HART_DSID, dsid_ptr->dsid);
+    cp_reg_w(CP_DSID_SEL - CP_HART_DSID, dsid_ptr->dsid << 2);
 	seq_printf(sf,"dsid of this group:%d\n",proc_dsid);
 
     int i;
