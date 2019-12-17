@@ -41,10 +41,6 @@ static int dsid_can_attach(struct cgroup_taskset *tset)
 	{
 		struct dsid_cgroup *dsid_ptr = css_dsid(dst_css);
 		task->dsid = dsid_ptr->dsid;
-
-		task->sizes = dsid_ptr-> sizes;
-		task->freq = dsid_ptr-> freq;
-		task->inc = dsid_ptr-> inc;
 	}
 	return 0;
 }
