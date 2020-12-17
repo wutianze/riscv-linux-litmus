@@ -17,6 +17,9 @@
 #include "../workqueue_internal.h"
 #include "../smpboot.h"
 
+#include <litmus/trace.h>
+#include <litmus/sched_trace.h>
+
 #define CREATE_TRACE_POINTS
 #include <trace/events/sched.h>
 
@@ -1772,8 +1775,14 @@ void scheduler_ipi(void)
 	preempt_fold_need_resched();
 
 	if (llist_empty(&this_rq()->wake_list) && !got_nohz_idle_kick())
+	{
+		#ifndef CONFIG_ARCH_CALLS_IRQ_ENTER_ON_RESCHED_IPI
+		/* If we don't call irq_enter(), we need to triggger the IRQ
+		 * tracing manually. */
+		ft_irq_fired();
+		#endif
 		return;
-
+	}
 	/*
 	 * Not all reschedule IPI handlers call irq_enter/irq_exit, since
 	 * traditionally all their work was done from the interrupt return
@@ -2799,6 +2808,12 @@ asmlinkage __visible void schedule_tail(struct task_struct *prev)
 	 */
 
 	rq = finish_task_switch(prev);
+
+	sched_trace_task_switch_to(current);
+
+	if (unlikely(sched_state_validate_switch()))
+		litmus_reschedule_local();
+
 	balance_callback(rq);
 	preempt_enable();
 
@@ -3416,9 +3431,15 @@ static void __sched notrace __schedule(bool preempt)
 	struct rq *rq;
 	int cpu;
 
+	TS_SCHED_START;
+
+	sched_state_entered_schedule();
+
 	cpu = smp_processor_id();
 	rq = cpu_rq(cpu);
 	prev = rq->curr;
+	
+	sched_trace_task_switch_away(prev);
 
 	schedule_debug(prev);
 
@@ -3442,6 +3463,8 @@ static void __sched notrace __schedule(bool preempt)
 	/* Promote REQ to ACT */
 	rq->clock_update_flags <<= 1;
 	update_rq_clock(rq);
+
+	this_cpu_write(litmus_preemption_in_progress, preempt);
 
 	switch_count = &prev->nivcsw;
 	if (!preempt && prev->state) {
@@ -3476,6 +3499,8 @@ static void __sched notrace __schedule(bool preempt)
 	clear_tsk_need_resched(prev);
 	clear_preempt_need_resched();
 
+	this_cpu_write(litmus_preemption_in_progress, false);
+
 	if (likely(prev != next)) {
 		rq->nr_switches++;
 		rq->curr = next;
@@ -3496,15 +3521,32 @@ static void __sched notrace __schedule(bool preempt)
 		++*switch_count;
 
 		trace_sched_switch(preempt, prev, next);
+		
+		TS_SCHED_END(next);
+		TS_CXS_START(next);
 
 		/* Also unlocks the rq: */
 		rq = context_switch(rq, prev, next, &rf);
+		
+		TS_CXS_END(current);
+
 	} else {
 		rq->clock_update_flags &= ~(RQCF_ACT_SKIP|RQCF_REQ_SKIP);
+		
+		TS_SCHED_END(prev);
+
 		rq_unlock_irq(rq, &rf);
 	}
 
+	TS_SCHED2_START(prev);
+	sched_trace_task_switch_to(current);
+
+	if (unlikely(sched_state_validate_switch()))
+		litmus_reschedule_local();
+
 	balance_callback(rq);
+
+	TS_SCHED2_END(prev);
 }
 
 void __noreturn do_task_dead(void)

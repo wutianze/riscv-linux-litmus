@@ -29,6 +29,9 @@
 #include <linux/task_io_accounting.h>
 #include <linux/rseq.h>
 
+#include <litmus/rt_param.h>
+#include <litmus/preempt.h>
+
 /* task_struct member predeclarations (sorted alphabetically): */
 struct audit_context;
 struct backing_dev_info;
@@ -579,6 +582,8 @@ union rcu_special {
 	u32 s; /* Set of bits. */
 };
 
+struct od_table_entry;
+
 enum perf_event_task_context {
 	perf_invalid_context = -1,
 	perf_hw_context = 0,
@@ -1089,6 +1094,12 @@ struct task_struct {
 	int				nr_dirtied_pause;
 	/* Start of a write-and-pause period: */
 	unsigned long			dirty_paused_when;
+
+	/* LITMUS RT parameters and state */
+	struct rt_param rt_param;
+
+	/* references to PI semaphores, etc. */
+	struct od_table_entry *od_table;
 
 #ifdef CONFIG_LATENCYTOP
 	int				latency_record_count;
@@ -1668,6 +1679,7 @@ static inline int test_tsk_thread_flag(struct task_struct *tsk, int flag)
 static inline void set_tsk_need_resched(struct task_struct *tsk)
 {
 	set_tsk_thread_flag(tsk,TIF_NEED_RESCHED);
+	sched_state_will_schedule(tsk);
 }
 
 static inline void clear_tsk_need_resched(struct task_struct *tsk)

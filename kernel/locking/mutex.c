@@ -538,7 +538,8 @@ mutex_optimistic_spin(struct mutex *lock, struct ww_acquire_ctx *ww_ctx,
 
 		/* Try to acquire the mutex... */
 		owner = __mutex_trylock_or_owner(lock);
-		if (!owner)
+		//if (!owner)
+		if(!owner)
 			break;
 
 		/*

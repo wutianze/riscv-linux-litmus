@@ -54,6 +54,8 @@
 #define CREATE_TRACE_POINTS
 #include <trace/events/ipi.h>
 
+#include <litmus/preempt.h>
+
 /*
  * as from 2.5, kernels no longer have an init_tasks structure
  * so we need some other way of telling a new secondary core
@@ -621,6 +623,8 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
 #endif
 
 	case IPI_RESCHEDULE:
+		/* LITMUS^RT: take action based on scheduler state */
+		sched_state_ipi();
 		scheduler_ipi();
 		break;
 
