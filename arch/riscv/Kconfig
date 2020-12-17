@@ -326,3 +326,4 @@ source "lib/Kconfig"
 
 source "arch/riscv/label/Kconfig"
 
+source "litmus/Kconfig"
