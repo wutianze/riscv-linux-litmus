@@ -39,7 +39,7 @@ extern void rcu_nmi_exit(void);
 		account_irq_enter_time(current);	\
 		preempt_count_add(HARDIRQ_OFFSET);	\
 		trace_hardirq_enter();			\
-		ft_irq_fired();
+		ft_irq_fired();                         \
 	} while (0)
 
 /*

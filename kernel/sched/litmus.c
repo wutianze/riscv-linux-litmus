@@ -264,18 +264,21 @@ static void put_prev_task_litmus(struct rq *rq, struct task_struct *p)
  * return the next task to be scheduled
  */
 static struct task_struct *pick_next_task_litmus(struct rq *rq,
-	struct task_struct *prev, struct pin_cookie cookie)
+	struct task_struct *prev, struct rq_flags *rf)
 {
 	struct task_struct *next;
 
 	if (is_realtime(prev))
 		update_time_litmus(rq, prev);
 
-	lockdep_unpin_lock(&rq->lock, cookie);
+	//lockdep_unpin_lock(&rq->lock, cookie);
+	rq_unpin_lock(rq, rf);
 	TS_PLUGIN_SCHED_START;
 	next = litmus_schedule(rq, prev);
 	TS_PLUGIN_SCHED_END;
-	lockdep_repin_lock(&rq->lock, cookie);
+	//lockdep_repin_lock(&rq->lock, cookie);
+	rq_repin_lock(rq, rf);
+
 
 	/* This is a bit backwards: the other classes call put_prev_task()
 	 * _after_ they've determined that the class has some queued tasks.

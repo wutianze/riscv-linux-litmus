@@ -211,7 +211,7 @@ struct hrtimer_start_on_info {
 	struct hrtimer		*timer;
 	ktime_t			time;
 	enum hrtimer_mode	mode;
-	struct call_single_data csd;
+	struct __call_single_data csd;
 };
 
 void hrtimer_pull(void *csd_info);

@@ -2100,6 +2100,7 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
 		set_task_cpu(p, cpu);
 	}
 
+litmus_out_activate:
 #else /* CONFIG_SMP */
 
 	if (p->in_iowait) {
@@ -2107,7 +2108,6 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
 		atomic_dec(&task_rq(p)->nr_iowait);
 	}
 
-litmus_out_activate:
 #endif /* CONFIG_SMP */
 
 	ttwu_queue(p, cpu, wake_flags);

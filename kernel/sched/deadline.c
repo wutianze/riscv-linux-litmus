@@ -2345,7 +2345,7 @@ static void switched_to_dl(struct rq *rq, struct task_struct *p)
 
 	/* If p is not queued we will update its parameters at next wakeup. */
 	//if (!task_on_rq_queued(p)) {
-	if (!task_on_rq_queued(p) || is_realtime(rq->curr))
+	if (!task_on_rq_queued(p) || is_realtime(rq->curr)){
 		add_rq_bw(&p->dl, &rq->dl);
 
 		return;

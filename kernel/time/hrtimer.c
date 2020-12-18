@@ -1471,7 +1471,7 @@ static void __hrtimer_run_queues(struct hrtimer_cpu_base *cpu_base, ktime_t now,
 				break;
 #ifdef CONFIG_REPORT_TIMER_LATENCY
 			if (cpu_base->hres_active &&
-			    (basenow.tv64 >=
+			    (basenow >=
 			     hrtimer_get_expires_tv64(timer) +
 			     ((s64) CONFIG_REPORT_TIMER_LATENCY_THRESHOLD))) {
 				printk_ratelimited(KERN_WARNING
@@ -1481,12 +1481,12 @@ static void __hrtimer_run_queues(struct hrtimer_cpu_base *cpu_base, ktime_t now,
 				    "timer:%p fn:%p"
 				    "\n",
 				    smp_processor_id(),
-				    basenow.tv64 - hrtimer_get_expires_tv64(timer),
-				    now.tv64, basenow.tv64,
+				    basenow - hrtimer_get_expires_tv64(timer),
+				    now, basenow,
 				    hrtimer_get_expires_tv64(timer),
 				    hrtimer_get_softexpires_tv64(timer),
-				    was_exp_nxt.tv64,
-				    timer->when_added.tv64,
+				    was_exp_nxt,
+				    timer->when_added,
 				    timer, timer->function);
 			}
 #endif
@@ -1601,7 +1601,7 @@ retry:
 
 	delta = ktime_sub(now, entry_time);
 
-	TRACE("hrtimer hang delta.tv64:%u\n", (unsigned int)delta.tv64);
+	TRACE("hrtimer hang delta:%u\n", (unsigned int)delta);
 
 	if ((unsigned int)delta > cpu_base->max_hang_time)
 		cpu_base->max_hang_time = (unsigned int) delta;
@@ -1614,7 +1614,7 @@ retry:
 	else
 		expires_next = ktime_add(now, delta);
 
-	TRACE("hrtimer expires_next:%llu\n", expires_next.tv64);
+	TRACE("hrtimer expires_next:%llu\n", expires_next);
 
 	tick_program_event(expires_next, 1);
 	printk_once(KERN_WARNING "hrtimer: interrupt took %llu ns\n",
@@ -1693,11 +1693,11 @@ static enum hrtimer_restart hrtimer_wakeup(struct hrtimer *timer)
 		if (is_realtime(task))
 		{
 			ktime_t expires = hrtimer_get_expires(timer);
-			lt_t intended_release = ktime_to_ns(expires);
+			//lt_t intended_release = ktime_to_ns(expires);
 			/* Fix up timers that were added past their due date;
 			 * that's not really release latency. */
-			lt_t intended_release = max(expires.tv64,
-			                            timer->when_added.tv64);
+			lt_t intended_release = max(expires,
+			                            timer->when_added);
 			TS_RELEASE_LATENCY(intended_release);
 		}
 #endif
@@ -1808,7 +1808,7 @@ long hrtimer_nanosleep(const struct timespec64 *rqtp,
 		 */
 		tsk_rt(current)->doing_abs_nanosleep = 1;
 		tsk_rt(current)->nanosleep_wakeup =
-			ktime_to_ns(timespec_to_ktime(*rqtp));
+			ktime_to_ns(timespec64_to_ktime(*rqtp));
 	}
 
 	hrtimer_init_on_stack(&t.timer, clockid, mode);
