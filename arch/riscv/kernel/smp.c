@@ -23,8 +23,6 @@
 #include <linux/smp.h>
 #include <linux/sched.h>
 
-#include <litmus/preempt.h>
-
 #include <asm/sbi.h>
 #include <asm/tlbflush.h>
 #include <asm/cacheflush.h>
@@ -65,8 +63,6 @@ void riscv_software_interrupt(void)
 			return;
 
 		if (ops & (1 << IPI_RESCHEDULE))
-			/* LITMUS^RT: take action based on scheduler state */
-			sched_state_ipi();
 			scheduler_ipi();
 
 		if (ops & (1 << IPI_CALL_FUNC))

@@ -17,8 +17,11 @@
 #include "../workqueue_internal.h"
 #include "../smpboot.h"
 
+#include <litmus/litmus.h>
+#include <litmus/debug_trace.h>
 #include <litmus/trace.h>
 #include <litmus/sched_trace.h>
+#include <litmus/sched_plugin.h>
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/sched.h>
@@ -474,6 +477,11 @@ void resched_curr(struct rq *rq)
 	if (cpu == smp_processor_id()) {
 		set_tsk_need_resched(curr);
 		set_preempt_need_resched();
+		return;
+	}else if (is_realtime(curr)) {
+		/* Cannot call set_tsk_need_resched() on LITMUS^RT task
+		 * on remote core. Only policy plugins may do this via
+		 * litmus_reschedule(). */
 		return;
 	}
 
@@ -1774,6 +1782,9 @@ void scheduler_ipi(void)
 	 */
 	preempt_fold_need_resched();
 
+	/* Let LITMUS^RT preemption state machine know about this IPI. */
+	sched_state_ipi();
+
 	if (llist_empty(&this_rq()->wake_list) && !got_nohz_idle_kick())
 	{
 		#ifndef CONFIG_ARCH_CALLS_IRQ_ENTER_ON_RESCHED_IPI
@@ -1859,7 +1870,14 @@ static void ttwu_queue(struct task_struct *p, int cpu, int wake_flags)
 	struct rq_flags rf;
 
 #if defined(CONFIG_SMP)
-	if (sched_feat(TTWU_QUEUE) && !cpus_share_cache(smp_processor_id(), cpu)) {
+	//if (sched_feat(TTWU_QUEUE) && !cpus_share_cache(smp_processor_id(), cpu)) {
+	
+	/*
+	 * LITMUS^RT: whether to send an IPI to the remote CPU is plugin
+	 * specific.
+	 */
+	if (!is_realtime(p) &&
+	    sched_feat(TTWU_QUEUE) && !cpus_share_cache(smp_processor_id(), cpu)) {
 		sched_clock_cpu(cpu); /* Sync clocks across CPUs */
 		ttwu_queue_remote(p, cpu, wake_flags);
 		return;
@@ -1985,6 +2003,9 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
 	unsigned long flags;
 	int cpu, success = 0;
 
+	if (is_realtime(p))
+		TRACE_TASK(p, "try_to_wake_up() state:%d\n", p->state);
+
 	/*
 	 * If we are going to wake up a thread waiting for CONDITION we
 	 * need to ensure that CONDITION=1 done by the caller can not be
@@ -2058,6 +2079,13 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
 	 */
 	smp_cond_load_acquire(&p->on_cpu, !VAL);
 
+	/* LITMUS^RT: once the task can be safely referenced by this
+	 * CPU, don't mess with Linux load balancing stuff.
+	 */
+	if (is_realtime(p))
+		goto litmus_out_activate;
+
+
 	p->sched_contributes_to_load = !!task_contributes_to_load(p);
 	p->state = TASK_WAKING;
 
@@ -2079,12 +2107,15 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
 		atomic_dec(&task_rq(p)->nr_iowait);
 	}
 
+litmus_out_activate:
 #endif /* CONFIG_SMP */
 
 	ttwu_queue(p, cpu, wake_flags);
 stat:
 	ttwu_stat(p, cpu, wake_flags);
 out:
+	if (is_realtime(p))
+		TRACE_TASK(p, "try_to_wake_up() done state:%d\n", p->state);
 	raw_spin_unlock_irqrestore(&p->pi_lock, flags);
 
 	return success;
@@ -2341,11 +2372,15 @@ int sched_fork(unsigned long clone_flags, struct task_struct *p)
 	 */
 	p->prio = current->normal_prio;
 
+	litmus_fork(p);
+
 	/*
 	 * Revert to default priority/policy on fork if requested.
 	 */
 	if (unlikely(p->sched_reset_on_fork)) {
-		if (task_has_dl_policy(p) || task_has_rt_policy(p)) {
+		//if (task_has_dl_policy(p) || task_has_rt_policy(p)) {
+		if (task_has_dl_policy(p) || task_has_rt_policy(p)
+			|| p->policy ==SCHED_LITMUS) {
 			p->policy = SCHED_NORMAL;
 			p->static_prio = NICE_TO_PRIO(0);
 			p->rt_priority = 0;
@@ -2362,7 +2397,10 @@ int sched_fork(unsigned long clone_flags, struct task_struct *p)
 		p->sched_reset_on_fork = 0;
 	}
 
-	if (dl_prio(p->prio)) {
+	//if (dl_prio(p->prio)) {
+	if (is_realtime(p)) {
+		p->sched_class = &litmus_sched_class;
+	} else if (dl_prio(p->prio)) {
 		put_cpu();
 		return -EAGAIN;
 	} else if (rt_prio(p->prio)) {
@@ -2434,6 +2472,9 @@ void wake_up_new_task(struct task_struct *p)
 {
 	struct rq_flags rf;
 	struct rq *rq;
+
+	if (is_realtime(p))
+		litmus->task_new(p, 1, 0);
 
 	raw_spin_lock_irqsave(&p->pi_lock, rf.flags);
 	p->state = TASK_RUNNING;
@@ -2709,6 +2750,10 @@ static struct rq *finish_task_switch(struct task_struct *prev)
 	 */
 	prev_state = prev->state;
 	vtime_task_switch(prev);
+
+	litmus->finish_switch(prev);
+	prev->rt_param.stack_in_use = NO_CPU;
+
 	perf_event_task_sched_in(prev, current);
 	finish_task(prev);
 	finish_lock_switch(rq);
@@ -3100,7 +3145,9 @@ void scheduler_tick(void)
 
 #ifdef CONFIG_SMP
 	rq->idle_balance = idle_cpu(cpu);
-	trigger_load_balance(rq);
+	//trigger_load_balance(rq);
+	if (!is_realtime(current))
+		trigger_load_balance(rq);
 #endif
 }
 
@@ -3354,7 +3401,12 @@ pick_next_task(struct rq *rq, struct task_struct *prev, struct rq_flags *rf)
 	 * call that function directly, but only if the @prev task wasn't of a
 	 * higher scheduling class, because otherwise those loose the
 	 * opportunity to pull in more work from other CPUs.
-	 */
+	 
+	 * NOT IN LITMUS^RT!
+	 * This breaks many assumptions in the plugins.
+	 * Do not uncomment without thinking long and hard
+	 * about how this affects global plugins such as GSN-EDF.
+
 	if (likely((prev->sched_class == &idle_sched_class ||
 		    prev->sched_class == &fair_sched_class) &&
 		   rq->nr_running == rq->cfs.h_nr_running)) {
@@ -3363,12 +3415,13 @@ pick_next_task(struct rq *rq, struct task_struct *prev, struct rq_flags *rf)
 		if (unlikely(p == RETRY_TASK))
 			goto again;
 
-		/* Assumes fair_sched_class->next == idle_sched_class */
+		// Assumes fair_sched_class->next == idle_sched_class 
 		if (unlikely(!p))
 			p = idle_sched_class.pick_next_task(rq, prev, rf);
 
 		return p;
 	}
+	*/
 
 again:
 	for_each_class(class) {
@@ -3955,7 +4008,8 @@ void set_user_nice(struct task_struct *p, long nice)
 	 * it wont have any effect on scheduling until the task is
 	 * SCHED_DEADLINE, SCHED_FIFO or SCHED_RR:
 	 */
-	if (task_has_dl_policy(p) || task_has_rt_policy(p)) {
+	//if (task_has_dl_policy(p) || task_has_rt_policy(p)) {
+	if (task_has_dl_policy(p) || task_has_rt_policy(p) || is_realtime(p)) {
 		p->static_prio = NICE_TO_PRIO(nice);
 		goto out_unlock;
 	}
@@ -4158,7 +4212,10 @@ static void __setscheduler(struct rq *rq, struct task_struct *p,
 	if (keep_boost)
 		p->prio = rt_effective_prio(p, p->prio);
 
-	if (dl_prio(p->prio))
+	//if (dl_prio(p->prio))
+	if (p->policy == SCHED_LITMUS)
+		p->sched_class = &litmus_sched_class;
+	else if (dl_prio(p->prio))	
 		p->sched_class = &dl_sched_class;
 	else if (rt_prio(p->prio))
 		p->sched_class = &rt_sched_class;
@@ -4195,6 +4252,7 @@ static int __sched_setscheduler(struct task_struct *p,
 	int reset_on_fork;
 	int queue_flags = DEQUEUE_SAVE | DEQUEUE_MOVE | DEQUEUE_NOCLOCK;
 	struct rq *rq;
+	int litmus_task = 0;
 
 	/* The pi code expects interrupts enabled */
 	BUG_ON(pi && in_interrupt());
@@ -4224,6 +4282,9 @@ recheck:
 	if ((dl_policy(policy) && !__checkparam_dl(attr)) ||
 	    (rt_policy(policy) != (attr->sched_priority != 0)))
 		return -EINVAL;
+	if (policy == SCHED_LITMUS && policy == p->policy)
+		return -EINVAL;
+
 
 	/*
 	 * Allow unprivileged RT tasks to decrease priority:
@@ -4281,6 +4342,12 @@ recheck:
 			return -EINVAL;
 
 		retval = security_task_setscheduler(p);
+		if (retval)
+			return retval;
+	}
+
+	if (policy == SCHED_LITMUS) {
+		retval = litmus_admit_task(p);
 		if (retval)
 			return retval;
 	}
@@ -4370,6 +4437,12 @@ change:
 		return -EBUSY;
 	}
 
+	if (is_realtime(p)) {
+		litmus_exit_task(p);
+		litmus_task = 1;
+	}
+
+
 	p->sched_reset_on_fork = reset_on_fork;
 	oldprio = p->prio;
 
@@ -4396,6 +4469,16 @@ change:
 	prev_class = p->sched_class;
 	__setscheduler(rq, p, attr, pi);
 
+	if (litmus_policy(policy)) {
+#ifdef CONFIG_SMP
+		p->rt_param.stack_in_use = running ? rq->cpu : NO_CPU;
+#else
+		p->rt_param.stack_in_use = running ? 0 : NO_CPU;
+#endif
+		p->rt_param.present = running;
+		litmus->task_new(p, queued, running);
+	}
+
 	if (queued) {
 		/*
 		 * We enqueue to tail when the priority of a task is
@@ -4421,6 +4504,9 @@ change:
 	/* Run balance callbacks after we've adjusted the PI chain: */
 	balance_callback(rq);
 	preempt_enable();
+
+	if (litmus_task)
+		litmus_dealloc(p);
 
 	return 0;
 }
@@ -4810,9 +4896,11 @@ long sched_setaffinity(pid_t pid, const struct cpumask *in_mask)
 	rcu_read_lock();
 
 	p = find_process_by_pid(pid);
-	if (!p) {
+	//if (!p) {
+	if (!p || is_realtime(p)) {
 		rcu_read_unlock();
-		return -ESRCH;
+		//return -ESRCH;
+		return p ? -EPERM : -ESRCH;
 	}
 
 	/* Prevent p going away */

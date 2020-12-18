@@ -166,6 +166,11 @@ static inline int rt_policy(int policy)
 	return policy == SCHED_FIFO || policy == SCHED_RR;
 }
 
+static inline int litmus_policy(int policy)
+{
+	return policy == SCHED_LITMUS;
+}
+
 static inline int dl_policy(int policy)
 {
 	return policy == SCHED_DEADLINE;
@@ -173,7 +178,8 @@ static inline int dl_policy(int policy)
 static inline bool valid_policy(int policy)
 {
 	return idle_policy(policy) || fair_policy(policy) ||
-		rt_policy(policy) || dl_policy(policy);
+		//rt_policy(policy) || dl_policy(policy);
+		rt_policy(policy) || dl_policy(policy) || litmus_policy(policy);
 }
 
 static inline int task_has_rt_policy(struct task_struct *p)
@@ -673,6 +679,10 @@ struct dl_rq {
 	u64			bw_ratio;
 };
 
+struct litmus_rq {
+	unsigned long nr_running;
+};
+
 #ifdef CONFIG_SMP
 
 static inline bool sched_asym_prefer(int a, int b)
@@ -784,6 +794,7 @@ struct rq {
 	struct cfs_rq		cfs;
 	struct rt_rq		rt;
 	struct dl_rq		dl;
+	struct litmus_rq litmus;
 
 #ifdef CONFIG_FAIR_GROUP_SCHED
 	/* list of leaf cfs_rq on this CPU: */
@@ -1547,14 +1558,22 @@ static inline void set_curr_task(struct rq *rq, struct task_struct *curr)
 	curr->sched_class->set_curr_task(rq);
 }
 
-#ifdef CONFIG_SMP
+/*#ifdef CONFIG_SMP
 #define sched_class_highest (&stop_sched_class)
 #else
 #define sched_class_highest (&dl_sched_class)
-#endif
+#endif*/
+
+/* Yes, this is conceptually wrong; this should be below the stop-machine class,
+ * but existing plugins (that predate the stop-machine class) depend on the
+ * assumption that LITMUS^RT plugins are the top scheduling class (FIXME).
+ */
+#define sched_class_highest (&litmus_sched_class)
+
 #define for_each_class(class) \
    for (class = sched_class_highest; class; class = class->next)
 
+extern const struct sched_class litmus_sched_class;
 extern const struct sched_class stop_sched_class;
 extern const struct sched_class dl_sched_class;
 extern const struct sched_class rt_sched_class;
