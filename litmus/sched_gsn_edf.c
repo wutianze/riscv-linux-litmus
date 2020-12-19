@@ -745,7 +745,7 @@ struct task_struct* find_hp_waiter(struct fmlp_semaphore *sem,
 	struct task_struct 	*queued, *found = NULL;
 
 	list_for_each(pos, &sem->wait.task_list) {
-		queued  = (struct task_struct*) list_entry(pos, wait_queue_t,
+		queued  = (struct task_struct*) list_entry(pos, wait_queue_entry_t,
 							   task_list)->private;
 
 		/* Compare task prios, find high prio task. */
@@ -759,7 +759,7 @@ int gsnedf_fmlp_lock(struct litmus_lock* l)
 {
 	struct task_struct* t = current;
 	struct fmlp_semaphore *sem = fmlp_from_lock(l);
-	wait_queue_t wait;
+	wait_queue_entry_t wait;
 	unsigned long flags;
 
 	if (!is_realtime(t))
@@ -779,7 +779,7 @@ int gsnedf_fmlp_lock(struct litmus_lock* l)
 		/* FIXME: interruptible would be nice some day */
 		set_task_state(t, TASK_UNINTERRUPTIBLE);
 
-		__add_wait_queue_tail_exclusive(&sem->wait, &wait);
+		__add_wait_queue_entry_tail_exclusive(&sem->wait, &wait);
 
 		/* check if we need to activate priority inheritance */
 		if (edf_higher_prio(t, sem->hp_waiter)) {

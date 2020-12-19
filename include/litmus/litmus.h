@@ -6,6 +6,10 @@
 #ifndef _LINUX_LITMUS_H_
 #define _LINUX_LITMUS_H_
 
+//---add myself
+#include <linux/wait.h>
+//---
+
 #include <litmus/ctrlpage.h>
 
 #ifdef CONFIG_RELEASE_MASTER

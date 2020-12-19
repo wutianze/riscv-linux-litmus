@@ -23,6 +23,12 @@
 #include <litmus/litmus_proc.h>
 #include <litmus/sched_trace.h>
 
+//---add myself
+#include <linux/sched/task.h>
+#include <uapi/linux/sched/types.h>
+#include <linux/sched/signal.h>
+//---
+
 #ifdef CONFIG_SCHED_CPU_AFFINITY
 #include <litmus/affinity.h>
 #endif

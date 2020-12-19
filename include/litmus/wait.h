@@ -1,11 +1,15 @@
 #ifndef _LITMUS_WAIT_H_
 #define _LITMUS_WAIT_H_
 
+//--add myself
+#include <linux/wait.h>
+//---
+
 struct task_struct* __waitqueue_remove_first(wait_queue_head_t *wq);
 
 /* wrap regular wait_queue_t head */
 struct __prio_wait_queue {
-	wait_queue_t wq;
+	wait_queue_entry_t wq;
 
 	/* some priority point */
 	lt_t priority;

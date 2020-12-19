@@ -533,7 +533,7 @@ int pfp_fmlp_lock(struct litmus_lock* l)
 {
 	struct task_struct* t = current;
 	struct fmlp_semaphore *sem = fmlp_from_lock(l);
-	wait_queue_t wait;
+	wait_queue_entry_t wait;
 	unsigned long flags;
 	lt_t time_of_request;
 
@@ -562,7 +562,7 @@ int pfp_fmlp_lock(struct litmus_lock* l)
 		/* FIXME: interruptible would be nice some day */
 		set_task_state(t, TASK_UNINTERRUPTIBLE);
 
-		__add_wait_queue_tail_exclusive(&sem->wait, &wait);
+		__add_wait_queue_entry_tail_exclusive(&sem->wait, &wait);
 
 		TS_LOCK_SUSPEND;
 
@@ -1164,8 +1164,8 @@ static void pcp_resume_unblocked(void)
 
 	while (waitqueue_active(blocked)) {
 		/* check first == highest-priority waiting job */
-		q = list_entry(blocked->task_list.next,
-			       prio_wait_queue_t, wq.task_list);
+		q = list_entry(blocked->head.next,
+			       prio_wait_queue_t, wq.entry);
 		t = (struct task_struct*) q->wq.private;
 
 		/* can it proceed now? => let it go */
@@ -1632,7 +1632,7 @@ int pfp_dflp_lock(struct litmus_lock* l)
 	int from  = get_partition(t);
 	int to    = sem->on_cpu;
 	unsigned long flags;
-	wait_queue_t wait;
+	wait_queue_entry_t wait;
 	lt_t time_of_request;
 
 	if (!is_realtime(t))
@@ -1666,7 +1666,7 @@ int pfp_dflp_lock(struct litmus_lock* l)
 		/* FIXME: interruptible would be nice some day */
 		set_task_state(t, TASK_UNINTERRUPTIBLE);
 
-		__add_wait_queue_tail_exclusive(&sem->wait, &wait);
+		__add_wait_queue_entry_tail_exclusive(&sem->wait, &wait);
 
 		TS_LOCK_SUSPEND;
 
