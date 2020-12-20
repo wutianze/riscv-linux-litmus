@@ -4,6 +4,10 @@
 #include <linux/uaccess.h>
 #include <linux/module.h>
 
+//---add myself
+#include <linux/sched/clock.h>
+//---
+
 #include <litmus/debug_trace.h>
 #include <litmus/litmus.h>
 #include <litmus/preempt.h>

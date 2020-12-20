@@ -8,6 +8,11 @@
 #include <linux/vmalloc.h>
 #include <linux/mutex.h>
 
+//---add myself
+#include <linux/uaccess.h>
+#include <linux/sched/signal.h>
+//---
+
 #include <litmus/feather_trace.h>
 #include <litmus/ftdev.h>
 

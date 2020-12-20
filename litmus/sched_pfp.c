@@ -560,7 +560,7 @@ int pfp_fmlp_lock(struct litmus_lock* l)
 		init_waitqueue_entry(&wait, t);
 
 		/* FIXME: interruptible would be nice some day */
-		set_task_state(t, TASK_UNINTERRUPTIBLE);
+		set_current_state(TASK_UNINTERRUPTIBLE);
 
 		__add_wait_queue_entry_tail_exclusive(&sem->wait, &wait);
 
@@ -727,7 +727,7 @@ static void mpcp_vspin_enter(void)
 
 			spin_lock_irqsave(&vspin->lock, flags);
 
-			set_task_state(t, TASK_UNINTERRUPTIBLE);
+			set_current_state(TASK_UNINTERRUPTIBLE);
 
 			__add_wait_queue_prio_exclusive(vspin, &wait);
 
@@ -812,7 +812,7 @@ int pfp_mpcp_lock(struct litmus_lock* l)
 		init_prio_waitqueue_entry(&wait, t, prio_point(get_priority(t)));
 
 		/* FIXME: interruptible would be nice some day */
-		set_task_state(t, TASK_UNINTERRUPTIBLE);
+		set_current_state(TASK_UNINTERRUPTIBLE);
 
 		__add_wait_queue_prio_exclusive(&sem->wait, &wait);
 
@@ -1117,7 +1117,7 @@ static void pcp_raise_ceiling(struct pcp_semaphore* sem,
 
 		/* enqueue in priority order */
 		init_prio_waitqueue_entry(&wait, t, effective_prio);
-		set_task_state(t, TASK_UNINTERRUPTIBLE);
+		set_current_state(TASK_UNINTERRUPTIBLE);
 		waiting_higher_prio = add_wait_queue_prio_exclusive(
 			&(this_cpu_ptr(&pcp_state)->ceiling_blocked), &wait);
 
@@ -1664,7 +1664,7 @@ int pfp_dflp_lock(struct litmus_lock* l)
 		init_waitqueue_entry(&wait, t);
 
 		/* FIXME: interruptible would be nice some day */
-		set_task_state(t, TASK_UNINTERRUPTIBLE);
+		set_current_state(TASK_UNINTERRUPTIBLE);
 
 		__add_wait_queue_entry_tail_exclusive(&sem->wait, &wait);
 

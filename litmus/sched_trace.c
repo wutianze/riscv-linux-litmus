@@ -4,6 +4,11 @@
 #include <linux/spinlock.h>
 #include <linux/mutex.h>
 
+//---add myself
+#include <linux/uaccess.h>
+#include <linux/sched/signal.h>
+//---
+
 #include <linux/fs.h>
 #include <linux/slab.h>
 #include <linux/miscdevice.h>

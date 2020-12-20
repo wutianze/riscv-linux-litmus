@@ -8,6 +8,13 @@
 
 //---add myself
 #include <linux/wait.h>
+
+#include <linux/syscalls.h>
+#include <linux/uaccess.h>
+
+//#include <linux/sched/task.h>
+//#include <uapi/linux/sched/types.h>
+//#include <linux/sched/signal.h>
 //---
 
 #include <litmus/ctrlpage.h>

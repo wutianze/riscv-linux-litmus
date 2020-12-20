@@ -3,6 +3,10 @@
 
 #include <linux/cpumask.h>
 
+//---add myself
+#include <linux/sched/topology.h>
+//---
+
 /* Works like:
 void get_nearest_available_cpu(
 	cpu_entry_t **nearest,

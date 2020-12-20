@@ -27,6 +27,8 @@
 #include <linux/sched/task.h>
 #include <uapi/linux/sched/types.h>
 #include <linux/sched/signal.h>
+//#include <linux/syscalls.h>
+//#include <uapi/asm-generic/unistd.h>
 //---
 
 #ifdef CONFIG_SCHED_CPU_AFFINITY

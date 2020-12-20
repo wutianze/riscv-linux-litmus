@@ -22,7 +22,7 @@ void litmus_uncache_vm_close(struct vm_area_struct *vma)
 {
 }
 
-int litmus_uncache_vm_fault(struct vm_area_struct* vma,
+static vm_fault_t litmus_uncache_vm_fault(//struct vm_area_struct* vma,
 							struct vm_fault* vmf)
 {
 	/* modeled after SG DMA video4linux, but without DMA. */
@@ -33,7 +33,7 @@ int litmus_uncache_vm_fault(struct vm_area_struct* vma,
 	if (!page)
 		return VM_FAULT_OOM;
 
-	clear_user_highpage(page, (unsigned long)vmf->virtual_address);
+	clear_user_highpage(page, (unsigned long)vmf->address);
 	vmf->page = page;
 
 	return 0;

@@ -383,7 +383,7 @@ struct fmlp_semaphore {
 	struct task_struct *owner;
 
 	/* FIFO queue of waiting tasks */
-	wait_queue_head wait;
+	wait_queue_head_t wait;
 };
 
 static inline struct fmlp_semaphore* fmlp_from_lock(struct litmus_lock* lock)
@@ -413,7 +413,7 @@ int psnedf_fmlp_lock(struct litmus_lock* l)
 		init_waitqueue_entry(&wait, t);
 
 		/* FIXME: interruptible would be nice some day */
-		set_task_state(t, TASK_UNINTERRUPTIBLE);
+		set_current_state(TASK_UNINTERRUPTIBLE);
 
 		__add_wait_queue_entry_tail_exclusive(&sem->wait, &wait);
 

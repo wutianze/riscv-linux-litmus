@@ -1,6 +1,10 @@
 #include <linux/slab.h>
 #include <asm/uaccess.h>
 
+//---add myself
+#include <linux/uaccess.h>
+//---
+
 #include <litmus/rt_param.h>
 
 #include <litmus/reservations/alloc.h>
