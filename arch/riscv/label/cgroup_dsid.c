@@ -374,6 +374,42 @@ static int dsid_cp_show(struct seq_file *sf, void *v)
 	return 0;
 }
 
+
+static ssize_t dsid_cache_write(struct kernfs_open_file *of, char *buf, size_t nbytes, loff_t off)
+{
+    return nbytes;
+}
+
+static int dsid_cache_show(struct seq_file *sf, void *v)
+{
+    const int NR_WAYS = 16;
+    const int CACHE_LABEL_INDEX = 0x59;
+    const int CACHE_LABEL_DATA = 0x5a;
+    const int DSID_WIDTH = 5;  // log2(4 cores) + 3 proc_bits
+
+	struct cgroup_subsys_state *css = seq_css(sf);
+	struct dsid_cgroup *dsid_ptr = css_dsid(css);
+	int proc_dsid = dsid_ptr->dsid;
+
+    uint32_t label = proc_dsid << 2;
+	seq_printf(sf,"physical label: %d\n", label);
+
+    int cnt[NR_WAYS];
+    int i;
+    for (i = 0; i < NR_WAYS; i++) {
+        int index = (i << DSID_WIDTH) | label;
+        cp_reg_w(CACHE_LABEL_INDEX - CP_HART_DSID, index);
+        cnt[i] = cp_reg_r(CACHE_LABEL_DATA - CP_HART_DSID);
+    }
+
+    seq_printf(sf, "way,set_cnt\n");
+    for (i = 0; i < NR_WAYS; i++) {
+        seq_printf(sf, "%d,%d\n", i, cnt[i]);
+    }
+
+    return 0;
+}
+
 static struct cftype dsid_files[] =
 {
 	{
@@ -386,6 +422,11 @@ static struct cftype dsid_files[] =
 		.write = dsid_cp_write,
 		.seq_show = dsid_cp_show,
 	},
+    {
+        .name = "dsid-cache",
+        .write = dsid_cache_write,
+        .seq_show = dsid_cache_show,
+    },
 	{}//null terminator
 	
 };
